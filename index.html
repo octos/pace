@@ -26,6 +26,10 @@
         .subheader{font-size:0.65rem;color:#ddd;display:block;font-weight:normal;}
         .emoji{font-size:1.1em;vertical-align:middle;margin-right:2px;}
         .footer{margin-top:12px;text-align:center;font-size:0.75rem;color:#7f8c8d;}
+        td.duration, td.finish {
+    font-family: consolas,monospace;
+}
+
         @media (max-width:480px){
             th,td{padding:3px 4px;font-size:0.78rem;}
             .pace{font-size:0.75rem;}
@@ -40,24 +44,24 @@
         
         <div class="controls">
             <label for="startTime">Start time:</label>
-            <input type="text" id="startTime" placeholder="08:30">
-            <small style="margin-left:4px;color:#7f8c8d;">blank = now</small>
+            <input type="text" id="startTime" placeholder="09:30">
+            <small style="margin-left:4px;color:#7f8c8d;">recalculates every 30s</small>
         </div>
 
         <table id="resultsTable">
             <thead>
                 <tr>
                     <th rowspan="2">Pace<br><span class="subheader">min/mi</span></th>
-                    <th colspan="2"><span class="emoji">🟢Green</span> 4.11</th>
-                    <th colspan="2"><span class="emoji">🟨Yellow</span> 4.52</th>
-                    <th colspan="2"><span class="emoji">❤️Red</span> 6.56</th>
+                    <th colspan="2"><span class="emoji">Green</span> 4.11</th>
+                    <th colspan="2"><span class="emoji">Yellow</span> 4.52</th>
+                    <th colspan="2"><span class="emoji">Red</span> 6.56</th>
                 </tr>
                 <tr>
-                    <th>Duration</th>
+                    <th>🟢<small>Duration</small></th>
                     <th>Finish</th>
-                    <th>Duration</th>
+                    <th>🟨<small>Duration</small></th>
                     <th>Finish</th>
-                    <th>Duration</th>
+                    <th>❤️<small>Duration</small></th>
                     <th>Finish</th>
                 </tr>
             </thead>
