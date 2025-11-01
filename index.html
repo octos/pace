@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Time Calculator</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f7f7f7;color:#000;line-height:1.2;}
+        .container{max-width:100%;padding:8px;margin:0 auto;}
+        h1{font-size:1.3rem;text-align:center;margin:8px 0;color:#2c3e50;}
+        .controls{text-align:center;margin:8px 0;padding:6px;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:0.9rem;}
+        .controls label{font-weight:600;margin-right:4px;}
+        .controls input{padding:6px 8px;font-size:1rem;width:90px;text-align:center;border:1px solid #ccc;border-radius:4px;}
+        table{width:100%;border-collapse:collapse;margin-top:8px;background:#fff;font-size:0.82rem;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+        th,td{border:1px solid #ddd;padding:4px 6px;text-align:center;vertical-align:middle;}
+        th{background:#444;color:#fff;font-size:0.75rem;position:sticky;top:0;z-index:10;}
+        tr:nth-child(even){background:#f9f9f9;}
+        .pace{font-weight:bold;background:#ecf0f1;white-space:nowrap;font-size:0.8rem;}
+        .duration{color:#7f8c8d;font-size:0.8rem;}
+        .finish{font-weight:bold;font-size:0.85rem;}
+        .green .finish{color:#27ae60;}
+        .yellow .finish{color:#f39c12;}
+        .red .finish{color:#c0392b;}
+        .remaining{font-size:0.7rem;color:#555;font-style:italic;display:block;margin-top:1px;}
+        .subheader{font-size:0.65rem;color:#ddd;display:block;font-weight:normal;}
+        .emoji{font-size:1.1em;vertical-align:middle;margin-right:2px;}
+        .footer{margin-top:12px;text-align:center;font-size:0.75rem;color:#7f8c8d;}
+        @media (max-width:480px){
+            th,td{padding:3px 4px;font-size:0.78rem;}
+            .pace{font-size:0.75rem;}
+            .duration,.finish{font-size:0.78rem;}
+            .remaining{font-size:0.65rem;}
+            .controls input{width:80px;font-size:0.95rem;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="controls">
+            <label for="startTime">Start time:</label>
+            <input type="text" id="startTime" placeholder="08:30">
+            <small style="margin-left:4px;color:#7f8c8d;">blank = now</small>
+        </div>
+
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th rowspan="2">Pace<br><span class="subheader">min/mi</span></th>
+                    <th colspan="2"><span class="emoji">🟢Green</span> 4.11</th>
+                    <th colspan="2"><span class="emoji">🟨Yellow</span> 4.52</th>
+                    <th colspan="2"><span class="emoji">❤️Red</span> 6.56</th>
+                </tr>
+                <tr>
+                    <th>Duration</th>
+                    <th>Finish</th>
+                    <th>Duration</th>
+                    <th>Finish</th>
+                    <th>Duration</th>
+                    <th>Finish</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="footer">
+            Written for Ragnar AZ 2025. Not yet tested in the wild. | <em>(Xh Ym Zs)</em> = time left from now
+        </div>
+    </div>
+
+    <script>
+        const distances = {green: 4.11, yellow: 4.52, red: 6.56};
+
+        function generatePaces() {
+            const p = [];
+            let m = 7, s = 0;
+            while (m < 17 || (m === 17 && s === 0)) {
+                p.push({min: m, sec: s});
+                s += 20;
+                if (s >= 60) { s -= 60; m++; }
+            }
+            return p;
+        }
+
+        function paceSeconds(p) { return p.min * 60 + p.sec; }
+        function calcDurationSeconds(dist, paceSec) { return Math.round(dist * paceSec); }
+
+        function formatSeconds(totalSec) {
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            return h > 0 ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}` : `${m}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function formatRemaining(totalSec) {
+            if (totalSec <= 0) return '(now)';
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            const parts = [];
+            if (h > 0) parts.push(`${h}h`);
+            if (m > 0) parts.push(`${m}m`);
+            if (s > 0 || parts.length === 0) parts.push(`${s}s`);
+            return `(${parts.join(' ')})`;
+        }
+
+        function formatPace(p) { return `${p.min}:${p.sec.toString().padStart(2,'0')}`; }
+
+        function parseTime(str) {
+            const [h, m] = str.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function addMinutes(startMin, addSec) {
+            const totalMin = startMin + Math.floor(addSec / 60);
+            const h = Math.floor(totalMin / 60) % 24;
+            const m = totalMin % 60;
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+        }
+
+        function getCurrentMinutes() {
+            const d = new Date();
+            return d.getHours() * 60 + d.getMinutes();
+        }
+
+        function getCurrentSeconds() {
+            const d = new Date();
+            return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+        }
+
+        function getCurrentTime() {
+            const d = new Date();
+            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        }
+
+        function updateTable() {
+            const tbody = document.querySelector('#resultsTable tbody');
+            tbody.innerHTML = '';
+
+            let input = document.getElementById('startTime').value.trim();
+            const startStr = input || getCurrentTime();
+            let startMin = 0;
+
+            if (/^\d{1,2}:\d{2}$/.test(startStr)) {
+                const [h, m] = startStr.split(':').map(Number);
+                if (h >= 0 && h < 24 && m >= 0 && m < 60) startMin = h * 60 + m;
+                else startMin = getCurrentMinutes();
+            } else {
+                startMin = getCurrentMinutes();
+            }
+
+            if (!input) document.getElementById('startTime').value = startStr;
+
+            const nowSec = getCurrentSeconds();
+            const startSec = startMin * 60;
+            const paces = generatePaces();
+
+            paces.forEach(p => {
+                const paceSec = paceSeconds(p);
+
+                const gSec = calcDurationSeconds(distances.green, paceSec);
+                const ySec = calcDurationSeconds(distances.yellow, paceSec);
+                const rSec = calcDurationSeconds(distances.red, paceSec);
+
+                const durG = formatSeconds(gSec);
+                const finG = addMinutes(startMin, gSec);
+                const timeLeftG = Math.max(0, gSec + startSec - nowSec);
+                const remG = formatRemaining(timeLeftG);
+
+                const durY = formatSeconds(ySec);
+                const finY = addMinutes(startMin, ySec);
+                const timeLeftY = Math.max(0, ySec + startSec - nowSec);
+                const remY = formatRemaining(timeLeftY);
+
+                const durR = formatSeconds(rSec);
+                const finR = addMinutes(startMin, rSec);
+                const timeLeftR = Math.max(0, rSec + startSec - nowSec);
+                const remR = formatRemaining(timeLeftR);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="pace">${formatPace(p)}</td>
+                    <td class="green duration">${durG}</td>
+                    <td class="green finish">${finG}<br><span class="remaining">${remG}</span></td>
+                    <td class="yellow duration">${durY}</td>
+                    <td class="yellow finish">${finY}<br><span class="remaining">${remY}</span></td>
+                    <td class="red duration">${durR}</td>
+                    <td class="red finish">${finR}<br><span class="remaining">${remR}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        window.onload = () => {
+            const input = document.getElementById('startTime');
+            input.value = getCurrentTime();
+            updateTable();
+            input.addEventListener('input', updateTable);
+            setInterval(updateTable, 30000);
+        };
+    </script>
+</body>
+</html>
